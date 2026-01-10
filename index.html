@@ -1139,51 +1139,51 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWakeBtn").onclick = addWake;
 
   // --- UNIFIED SHOWAPP & GATEKEEPER ---
-async function showApp(user) {
-  try {
-    // 1. Fetch data once
-    const userDoc = await db.collection("users").doc(user.uid).get();
-    const userData = userDoc.data();
+  async function showApp(user) {
+    try {
+      // 1. Fetch data once
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const userData = userDoc.data();
 
-    // 2. THE LOCK: Check approval immediately
-    if (!userData || userData.approved !== true) {
-      alert("Account pending admin approval.");
+      // 2. THE LOCK: Check approval immediately
+      if (!userData || userData.approved !== true) {
+        alert("Account pending admin approval.");
+        await auth.signOut();
+        connector.style.display = "block";
+        app.style.display = "none";
+        if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
+        return; // Stop here if not approved
+      }
+
+      // 3. THE ACCESS: Only happens if approved is true
+      connector.style.display = "none";
+      if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "block";
+      app.style.display = "block";
+
+      const userName = user.displayName || user.email;
+      welcomeUserEl.textContent = `Welcome back, ${userName}`;
+      streakEl.textContent = userData.streak || 0;
+
+      updateTodayView(user);
+      updateWeeklyView(user);
+      updateStreakIfComplete(user);
+      
+    } catch (err) {
+      console.error("ShowApp Error:", err);
       await auth.signOut();
+    }
+  }
+
+  // THE CLEAN GATEKEEPER
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      showApp(user); 
+    } else {
       connector.style.display = "block";
       app.style.display = "none";
       if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
-      return; // Stop here if not approved
     }
-
-    // 3. THE ACCESS: Only happens if approved is true
-    connector.style.display = "none";
-    if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "block";
-    app.style.display = "block";
-
-    const userName = user.displayName || user.email;
-    welcomeUserEl.textContent = `Welcome back, ${userName}`;
-    streakEl.textContent = userData.streak || 0;
-
-    updateTodayView(user);
-    updateWeeklyView(user);
-    updateStreakIfComplete(user);
-    
-  } catch (err) {
-    console.error("ShowApp Error:", err);
-    await auth.signOut();
-  }
-}
-
-// THE CLEAN GATEKEEPER
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    showApp(user); 
-  } else {
-    connector.style.display = "block";
-    app.style.display = "none";
-    if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
-  }
-});
+  });
 
   // --- THE UPDATED SIGNUP BUTTON ---
   signupBtn.onclick = async (e) => {
@@ -1217,46 +1217,39 @@ auth.onAuthStateChanged((user) => {
     }
   };
 
-    // 3. Immediately show them the app
-    showApp(cred.user); 
-    
-  } catch (err) { 
-    loginMsg.textContent = err.message; 
-  }
-};
-
   loginBtn.onclick = async () => {
     try { await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); }
     catch (e) { loginMsg.textContent = e.message; }
   };
 
   logoutBtn.onclick = () => auth.signOut();
+  
   async function updateCommunityView() {
-  const communityBody = document.getElementById("communityTableBody");
-  const communityHeader = document.getElementById("communityTableHeader");
+    const communityBody = document.getElementById("communityTableBody");
+    const communityHeader = document.getElementById("communityTableHeader");
 
-  // Clear previous content
-  communityBody.innerHTML = "";
-  communityHeader.innerHTML = "<th>User</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th><th>Week %</th>";
+    // Clear previous content
+    communityBody.innerHTML = "";
+    communityHeader.innerHTML = "<th>User</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th><th>Week %</th>";
 
-  // Get all users from Firestore
-  const snapshot = await db.collection("users").get();
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    const userName = data.displayName || doc.id; // fallback if no displayName
-    const habits = data.habits || [];
-    const habitsHistory = data.habitsHistory || {};
+    // Get all users from Firestore
+    const snapshot = await db.collection("users").get();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const userName = data.displayName || doc.id; // fallback if no displayName
+      const habits = data.habits || [];
+      const habitsHistory = data.habitsHistory || {};
 
-    // Calculate weekly progress (last 7 days)
-    const today = new Date();
-    const last7Days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      last7Days.push(d.toISOString().split("T")[0]);
-    }
+      // Calculate weekly progress (last 7 days)
+      const today = new Date();
+      const last7Days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        last7Days.push(d.toISOString().split("T")[0]);
+      }
 
-    let total = 0, done = 0;
+      let total = 0, done = 0;
       const dayCells = []; 
 
       // This creates the 7 colored boxes for the last 7 days
@@ -1303,10 +1296,10 @@ auth.onAuthStateChanged((user) => {
         <td style="text-align:right; font-weight:bold; padding: 8px;">${percent}%</td>
       `;
       communityBody.appendChild(tr);
-  });
-}
+    });
+  }
 
-openCommunityBtn.onclick = async () => {
+  openCommunityBtn.onclick = async () => {
     communityModal.style.display = "flex";
     await updateCommunityView();
   };
@@ -1319,7 +1312,3 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
-
-
-
-
