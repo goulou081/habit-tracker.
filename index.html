@@ -1182,33 +1182,45 @@ document.addEventListener("DOMContentLoaded", () => {
   signupBtn.onclick = async (e) => {
   e.preventDefault(); 
   const nameVal = displayNameInput.value; 
+  const emailVal = emailInput.value;
+  const passwordVal = passwordInput.value;
   
   try {
-    const cred = await auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value);
+    // 1. Create the Auth Account
+    const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
     
-    // 1. Updates their login profile name
+    // 2. Update the Profile
     await cred.user.updateProfile({ displayName: nameVal });
     
-    // 2. Creates their database file WITH THE LOCK
+    // 3. Save to Database and WAIT (await) for it to finish
     await db.collection("users").doc(cred.user.uid).set({ 
       displayName: nameVal, 
-      approved: false,    // <--- THIS IS THE LOCK
+      email: emailVal,
+      approved: false, 
       streak: 0, 
       habits: [], 
       habitsHistory: {}, 
       wake: [] 
     });
 
-    // 3. Kick them out so the Security Guard can check them
-    alert("Signup successful! Please wait for the admin to approve your account.");
-    await auth.signOut();
-    
-    // Reset the UI to the login screen
-    connector.style.display = "block";
-    app.style.display = "none";
-    if(settingsContainer) settingsContainer.style.display = "none";
-    
+    // 4. THE MAGIC DELAY: This gives the database time to "hear" the save
+    setTimeout(async () => {
+      alert("Signup successful! Please wait for the admin to approve your account.");
+      await auth.signOut();
+      
+      // Force UI back to login screen
+      connector.style.display = "block";
+      app.style.display = "none";
+      if(settingsContainer) settingsContainer.style.display = "none";
+      
+      // Clear the boxes
+      emailInput.value = "";
+      passwordInput.value = "";
+      displayNameInput.value = "";
+    }, 800); // 800ms is a safe "waiting room" for the data to upload
+
   } catch (err) { 
+    console.error("Signup Error: ", err);
     loginMsg.textContent = err.message; 
   }
 };
@@ -1216,8 +1228,6 @@ document.addEventListener("DOMContentLoaded", () => {
 loginBtn.onclick = async () => {
   try { 
     await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); 
-    // Notice: There is NO showApp() here. 
-    // The auth.onAuthStateChanged guard at the bottom will handle the check.
   } catch (e) { 
     loginMsg.textContent = e.message; 
   }
@@ -1312,6 +1322,7 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
