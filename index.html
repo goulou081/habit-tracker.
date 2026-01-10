@@ -1164,27 +1164,28 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   signupBtn.onclick = async (e) => {
-  e.preventDefault(); // Prevents the page from flickering/reloading
-  const nameVal = displayNameInput.value; // Grabs the name before starting
+  e.preventDefault(); 
+  const nameVal = displayNameInput.value; 
   
   try {
     const cred = await auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value);
     
-    // 1. Updates their login profile
+    // 1. Updates their login profile name
     await cred.user.updateProfile({ displayName: nameVal });
     
-    // 2. Creates their database file with the name included
+    // 2. Creates their database file and SAVES the name there
+    // This is the part that makes the "actual name" show up in Community
     await db.collection("users").doc(cred.user.uid).set({ 
-      displayName: nameVal, // THIS fixes the weird code (UID) issue
+      displayName: nameVal, 
       streak: 0, 
       habits: [], 
       habitsHistory: {}, 
-      wake: [],
-      approved: false // Keeps them in the "waiting room" until you approve them
+      wake: [] 
     });
+
+    // 3. Immediately show them the app
+    showApp(cred.user); 
     
-    alert("Request sent! Once approved, you can log in.");
-    auth.signOut(); // Logs them out so they can't enter until you say so
   } catch (err) { 
     loginMsg.textContent = err.message; 
   }
@@ -1284,3 +1285,4 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
