@@ -1138,52 +1138,52 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addHabitBtn").onclick = addHabit;
   document.getElementById("addWakeBtn").onclick = addWake;
 
-  async function showApp(user) {
+  // --- UNIFIED SHOWAPP & GATEKEEPER ---
+async function showApp(user) {
+  try {
+    // 1. Fetch data once
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    const userData = userDoc.data();
+
+    // 2. THE LOCK: Check approval immediately
+    if (!userData || userData.approved !== true) {
+      alert("Account pending admin approval.");
+      await auth.signOut();
+      connector.style.display = "block";
+      app.style.display = "none";
+      if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
+      return; // Stop here if not approved
+    }
+
+    // 3. THE ACCESS: Only happens if approved is true
     connector.style.display = "none";
-    settingsContainer.style.display = "block";
+    if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "block";
     app.style.display = "block";
 
     const userName = user.displayName || user.email;
     welcomeUserEl.textContent = `Welcome back, ${userName}`;
-
-    const data = (await db.collection("users").doc(user.uid).get()).data() || {};
-    streakEl.textContent = data.streak || 0;
+    streakEl.textContent = userData.streak || 0;
 
     updateTodayView(user);
     updateWeeklyView(user);
     updateStreakIfComplete(user);
+    
+  } catch (err) {
+    console.error("ShowApp Error:", err);
+    await auth.signOut();
   }
+}
 
-  // --- THE UPDATED GATEKEEPER ---
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      try {
-        const userDoc = await db.collection("users").doc(user.uid).get();
-        
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          
-          // The critical check
-          if (userData.approved === true) {
-            showApp(user);
-          } else {
-            alert("Account pending admin approval.");
-            await auth.signOut();
-          }
-        } else {
-          // If the doc doesn't exist yet, stay logged out
-          await auth.signOut();
-        }
-      } catch (err) {
-        console.error("Auth error:", err);
-        await auth.signOut();
-      }
-    } else {
-      connector.style.display = "block";
-      app.style.display = "none";
-      if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
-    }
-  });
+// THE CLEAN GATEKEEPER
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    showApp(user); 
+  } else {
+    connector.style.display = "block";
+    app.style.display = "none";
+    if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
+  }
+});
 
   // --- THE UPDATED SIGNUP BUTTON ---
   signupBtn.onclick = async (e) => {
@@ -1319,6 +1319,7 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
