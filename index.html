@@ -1154,84 +1154,46 @@ document.addEventListener("DOMContentLoaded", () => {
     updateStreakIfComplete(user);
   }
 
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      // 1. Check the database for this specific user
-      const userDoc = await db.collection("users").doc(user.uid).get();
-      const userData = userDoc.data();
-
-      // 2. ONLY show app if approved is true
-      if (userData && userData.approved === true) {
-        showApp(user);
-      } else {
-        // 3. If not approved, kick them out and show the login box
-        if (userData) alert("Account pending approval. Please wait for the admin.");
-        await auth.signOut();
-        connector.style.display = "block";
-        app.style.display = "none";
-        if(settingsContainer) settingsContainer.style.display = "none";
-      }
-    } else {
-      // Show login box if no user is found
+  auth.onAuthStateChanged(user => {
+    if (user) showApp(user);
+    else {
       connector.style.display = "block";
       app.style.display = "none";
-      if(settingsContainer) settingsContainer.style.display = "none";
+      settingsContainer.style.display = "none";
     }
   });
 
   signupBtn.onclick = async (e) => {
-  e.preventDefault(); 
-  const nameVal = displayNameInput.value; 
-  const emailVal = emailInput.value;
-  const passwordVal = passwordInput.value;
+  e.preventDefault(); // Prevents the page from flickering/reloading
+  const nameVal = displayNameInput.value; // Grabs the name before starting
   
   try {
-    // 1. Create the Auth Account
-    const cred = await auth.createUserWithEmailAndPassword(emailVal, passwordVal);
+    const cred = await auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value);
     
-    // 2. Update the Profile
+    // 1. Updates their login profile
     await cred.user.updateProfile({ displayName: nameVal });
     
-    // 3. Save to Database and WAIT (await) for it to finish
+    // 2. Creates their database file with the name included
     await db.collection("users").doc(cred.user.uid).set({ 
-      displayName: nameVal, 
-      email: emailVal,
-      approved: false, 
+      displayName: nameVal, // THIS fixes the weird code (UID) issue
       streak: 0, 
       habits: [], 
       habitsHistory: {}, 
-      wake: [] 
+      wake: [],
+      approved: false // Keeps them in the "waiting room" until you approve them
     });
-
-    // 4. THE MAGIC DELAY: This gives the database time to "hear" the save
-    setTimeout(async () => {
-      alert("Signup successful! Please wait for the admin to approve your account.");
-      await auth.signOut();
-      
-      // Force UI back to login screen
-      connector.style.display = "block";
-      app.style.display = "none";
-      if(settingsContainer) settingsContainer.style.display = "none";
-      
-      // Clear the boxes
-      emailInput.value = "";
-      passwordInput.value = "";
-      displayNameInput.value = "";
-    }, 800); // 800ms is a safe "waiting room" for the data to upload
-
+    
+    alert("Request sent! Once approved, you can log in.");
+    auth.signOut(); // Logs them out so they can't enter until you say so
   } catch (err) { 
-    console.error("Signup Error: ", err);
     loginMsg.textContent = err.message; 
   }
 };
 
-loginBtn.onclick = async () => {
-  try { 
-    await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); 
-  } catch (e) { 
-    loginMsg.textContent = e.message; 
-  }
-};
+  loginBtn.onclick = async () => {
+    try { await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); }
+    catch (e) { loginMsg.textContent = e.message; }
+  };
 
   logoutBtn.onclick = () => auth.signOut();
   async function updateCommunityView() {
@@ -1322,7 +1284,3 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
-
-
-
-
