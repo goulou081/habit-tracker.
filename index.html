@@ -1163,18 +1163,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  signupBtn.onclick = async () => {
-    try {
-      const cred = await auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value);
-      await cred.user.updateProfile({ displayName: displayNameInput.value });
-      await db.collection("users").doc(cred.user.uid).set({ 
-        streak: 0, 
-        habits: [], 
-        habitsHistory: {}, 
-        wake: [] 
-      });
-    } catch (e) { loginMsg.textContent = e.message; }
-  };
+  signupBtn.onclick = async (e) => {
+  e.preventDefault(); // Prevents the page from flickering/reloading
+  const nameVal = displayNameInput.value; // Grabs the name before starting
+  
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value);
+    
+    // 1. Updates their login profile
+    await cred.user.updateProfile({ displayName: nameVal });
+    
+    // 2. Creates their database file with the name included
+    await db.collection("users").doc(cred.user.uid).set({ 
+      displayName: nameVal, // THIS fixes the weird code (UID) issue
+      streak: 0, 
+      habits: [], 
+      habitsHistory: {}, 
+      wake: [],
+      approved: false // Keeps them in the "waiting room" until you approve them
+    });
+    
+    alert("Request sent! Once approved, you can log in.");
+    auth.signOut(); // Logs them out so they can't enter until you say so
+  } catch (err) { 
+    loginMsg.textContent = err.message; 
+  }
+};
 
   loginBtn.onclick = async () => {
     try { await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); }
