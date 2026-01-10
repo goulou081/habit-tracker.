@@ -1154,34 +1154,68 @@ document.addEventListener("DOMContentLoaded", () => {
     updateStreakIfComplete(user);
   }
 
-  auth.onAuthStateChanged(user => {
-    if (user) showApp(user);
-    else {
+  // --- THE UPDATED GATEKEEPER ---
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      try {
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          
+          // The critical check
+          if (userData.approved === true) {
+            showApp(user);
+          } else {
+            alert("Account pending admin approval.");
+            await auth.signOut();
+          }
+        } else {
+          // If the doc doesn't exist yet, stay logged out
+          await auth.signOut();
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+        await auth.signOut();
+      }
+    } else {
       connector.style.display = "block";
       app.style.display = "none";
-      settingsContainer.style.display = "none";
+      if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
     }
   });
 
+  // --- THE UPDATED SIGNUP BUTTON ---
   signupBtn.onclick = async (e) => {
-  e.preventDefault(); 
-  const nameVal = displayNameInput.value; 
-  
-  try {
-    const cred = await auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value);
+    e.preventDefault(); 
+    const nameVal = displayNameInput.value; 
+    const emailVal = emailInput.value;
+    const passVal = passwordInput.value;
     
-    // 1. Updates their login profile name
-    await cred.user.updateProfile({ displayName: nameVal });
-    
-    // 2. Creates their database file and SAVES the name there
-    // This is the part that makes the "actual name" show up in Community
-    await db.collection("users").doc(cred.user.uid).set({ 
-      displayName: nameVal, 
-      streak: 0, 
-      habits: [], 
-      habitsHistory: {}, 
-      wake: [] 
-    });
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(emailVal, passVal);
+      await cred.user.updateProfile({ displayName: nameVal });
+      
+      // CREATE THE DOC WITH THE LOCK
+      await db.collection("users").doc(cred.user.uid).set({ 
+        displayName: nameVal, 
+        approved: false, // <--- THIS IS THE LOCK
+        streak: 0, 
+        habits: [], 
+        habitsHistory: {}, 
+        wake: [] 
+      });
+
+      setTimeout(async () => {
+        alert("Signup successful! Please wait for admin approval.");
+        await auth.signOut();
+        window.location.reload(); 
+      }, 1000);
+
+    } catch (err) { 
+      loginMsg.textContent = err.message; 
+    }
+  };
 
     // 3. Immediately show them the app
     showApp(cred.user); 
@@ -1285,5 +1319,6 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
