@@ -1189,28 +1189,39 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1. Updates their login profile name
     await cred.user.updateProfile({ displayName: nameVal });
     
-    // 2. Creates their database file and SAVES the name there
-    // This is the part that makes the "actual name" show up in Community
+    // 2. Creates their database file WITH THE LOCK
     await db.collection("users").doc(cred.user.uid).set({ 
       displayName: nameVal, 
+      approved: false,    // <--- THIS IS THE LOCK
       streak: 0, 
       habits: [], 
       habitsHistory: {}, 
       wake: [] 
     });
 
-    // 3. Immediately show them the app
-    showApp(cred.user); 
+    // 3. Kick them out so the Security Guard can check them
+    alert("Signup successful! Please wait for the admin to approve your account.");
+    await auth.signOut();
+    
+    // Reset the UI to the login screen
+    connector.style.display = "block";
+    app.style.display = "none";
+    if(settingsContainer) settingsContainer.style.display = "none";
     
   } catch (err) { 
     loginMsg.textContent = err.message; 
   }
 };
 
-  loginBtn.onclick = async () => {
-    try { await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); }
-    catch (e) { loginMsg.textContent = e.message; }
-  };
+loginBtn.onclick = async () => {
+  try { 
+    await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); 
+    // Notice: There is NO showApp() here. 
+    // The auth.onAuthStateChanged guard at the bottom will handle the check.
+  } catch (e) { 
+    loginMsg.textContent = e.message; 
+  }
+};
 
   logoutBtn.onclick = () => auth.signOut();
   async function updateCommunityView() {
@@ -1301,5 +1312,6 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
