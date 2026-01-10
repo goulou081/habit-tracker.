@@ -1154,12 +1154,28 @@ document.addEventListener("DOMContentLoaded", () => {
     updateStreakIfComplete(user);
   }
 
-  auth.onAuthStateChanged(user => {
-    if (user) showApp(user);
-    else {
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      // 1. Check the database for this specific user
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const userData = userDoc.data();
+
+      // 2. ONLY show app if approved is true
+      if (userData && userData.approved === true) {
+        showApp(user);
+      } else {
+        // 3. If not approved, kick them out and show the login box
+        if (userData) alert("Account pending approval. Please wait for the admin.");
+        await auth.signOut();
+        connector.style.display = "block";
+        app.style.display = "none";
+        if(settingsContainer) settingsContainer.style.display = "none";
+      }
+    } else {
+      // Show login box if no user is found
       connector.style.display = "block";
       app.style.display = "none";
-      settingsContainer.style.display = "none";
+      if(settingsContainer) settingsContainer.style.display = "none";
     }
   });
 
@@ -1285,4 +1301,5 @@ openCommunityBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
