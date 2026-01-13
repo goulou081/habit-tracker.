@@ -80,10 +80,30 @@ h1 {
   align-items:center;
 }
 
+/* --- UPDATED LAYOUT --- */
 .layout {
   display:grid;
   grid-template-columns: 1.2fr 2fr;
   gap:20px;
+  align-items: start; /* Prevents stretching height */
+}
+
+/* --- MOBILE OPTIMIZATION --- */
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr; /* Stack vertically */
+  }
+
+  /* Allows table to scroll sideways instead of squishing */
+  .card {
+    overflow-x: auto; 
+  }
+  
+  /* Forces the squares to stay squares */
+  td.scheduled {
+    min-width: 32px;
+    min-height: 32px;
+  }
 }
 
 .card {
@@ -961,19 +981,22 @@ async function updateWeeklyView(user) {
     const cells = dates.map(d => {
       const dateObj = new Date(d);
       const dayName = weekdayNames[dateObj.getDay()];
+      
+      // 1. If habit not scheduled for this day, return empty
       if (!h.days || !h.days.includes(dayName)) return "<td></td>";
+      
       const status = habitsHistory[d]?.[h.title];
 
-      // 1. If explicitly done -> Green
+      // 2. If explicitly done -> Green
       if (status === true) return `<td class="scheduled done"></td>`;
 
-      // 2. If NOT done (undefined OR false) AND date is in the past -> Red
+      // 3. If NOT done (undefined OR false) AND date is in the past -> Red
       const todayISO = new Date().toISOString().split("T")[0];
       if (d < todayISO) {
         return `<td class="scheduled missed"></td>`;
       }
 
-      // 3. Otherwise (Today or Future) -> Neutral
+      // 4. Otherwise (Today or Future) -> Neutral
       return `<td class="scheduled neutral"></td>`;
     });
     
@@ -1317,4 +1340,3 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
-
