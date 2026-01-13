@@ -98,6 +98,10 @@ h1 {
   border: 1px solid var(--border);
 }
 
+.mobile-hint {
+  display: none; /* Hidden by default on PC */
+}
+
 @media (max-width: 768px) {
   body {
     padding: 12px;
@@ -106,6 +110,13 @@ h1 {
   .layout {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+  
+  .mobile-hint {
+    display: block; /* Show only on mobile */
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-size: 12px;
   }
 
   /* Reset table layout to allow natural width */
@@ -602,19 +613,10 @@ const db = firebase.firestore();
     </div>
 
     <div class="card card-weekly">
-      <h2>Wake Up Time</h2>
-      <div style="display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:start; margin-bottom: 20px;">
-        <div id="wakeList"></div>
-        <div class="add" style="border-top:none; padding-top:0; margin-top:0;">
-          <input type="time" id="wakeTime" class="time-input" />
-          <button id="addWakeBtn">Add</button>
-        </div>
-      </div>
-
       <div id="habitList" style="display:none;"></div>
 
       <h2>Weekly Overview</h2>
-      <small style="color:var(--muted); display:block; margin-bottom:8px;">Scroll table right to see more days →</small>
+      <small class="mobile-hint">Scroll table right to see more days →</small>
       
       <div class="week-nav">
         <button id="prevWeek" class="nav-btn">← Back</button>
@@ -629,6 +631,17 @@ const db = firebase.firestore();
           </thead>
           <tbody id="weeklyBody"></tbody>
         </table>
+      </div>
+
+      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <h2>Wake Up Time</h2>
+        <div style="display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:start;">
+          <div id="wakeList"></div>
+          <div class="add" style="border-top:none; padding-top:0; margin-top:0;">
+            <input type="time" id="wakeTime" class="time-input" />
+            <button id="addWakeBtn">Add</button>
+          </div>
+        </div>
       </div>
 
     </div>
