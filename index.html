@@ -80,31 +80,63 @@ h1 {
   align-items:center;
 }
 
-/* --- UPDATED LAYOUT --- */
 .layout {
   display:grid;
   grid-template-columns: 1.2fr 2fr;
   gap:20px;
-  align-items: start; /* Prevents stretching height */
+  align-items: start;
 }
 
-/* --- MOBILE OPTIMIZATION --- */
+/* --- MOBILE OPTIMIZATION START --- */
 @media (max-width: 768px) {
+  body {
+    padding: 12px; /* Less padding on mobile body */
+  }
+
   .layout {
     grid-template-columns: 1fr; /* Stack vertically */
+    gap: 12px;
   }
 
-  /* Allows table to scroll sideways instead of squishing */
-  .card {
-    overflow-x: auto; 
+  /* Force table to fit screen width (No scrolling) */
+  table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 11px; /* Smaller text */
+  }
+
+  th, td {
+    padding: 4px 2px; /* Minimal padding */
+  }
+
+  /* The Habit Name Column */
+  th:first-child, td:first-child {
+    width: 30%; /* Give 30% width to name */
+    white-space: nowrap; /* Forces one line */
+    overflow: hidden;    /* Cuts off extra text */
+    text-overflow: ellipsis; /* Adds ... */
+  }
+
+  /* The Date Columns */
+  th:not(:first-child), td:not(:first-child) {
+    width: 10%; /* Evenly split the rest */
+  }
+
+  /* Smaller Squares for Mobile */
+  td.scheduled {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 4px;
   }
   
-  /* Forces the squares to stay squares */
-  td.scheduled {
-    min-width: 32px;
-    min-height: 32px;
+  /* Hide the delete button in table on mobile if it gets too crowded, 
+     or make it very small */
+  .delete-btn {
+    width: 16px; 
+    height: 16px;
   }
 }
+/* --- MOBILE OPTIMIZATION END --- */
 
 .card {
   background:var(--panel);
@@ -935,7 +967,7 @@ async function updateTodayView(user) {
   updateProgress();
 }
 
-// ---------------- WEEKLY VIEW ----------------
+// ---------------- WEEKLY VIEW (WITH RED COLOR FIX RESTORED) ----------------
 async function updateWeeklyView(user) {
   if (!user) return;
   const data = (await db.collection("users").doc(user.uid).get()).data() || {};
@@ -991,6 +1023,7 @@ async function updateWeeklyView(user) {
       if (status === true) return `<td class="scheduled done"></td>`;
 
       // 3. If NOT done (undefined OR false) AND date is in the past -> Red
+      // I have ensured this fix remains here so your habits turn red!
       const todayISO = new Date().toISOString().split("T")[0];
       if (d < todayISO) {
         return `<td class="scheduled missed"></td>`;
