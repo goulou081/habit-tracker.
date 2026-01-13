@@ -593,22 +593,48 @@ const db = firebase.firestore();
 
   <div class="layout">
 
-    <div class="card">
-      <h2>Today's Planner ↕️ In order ↕️</h2>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card">
+        <h2>Today's Planner ↕️ In order ↕️</h2>
 
-      <div id="percentComplete" style="margin-bottom:8px; font-weight:500;">
-        Completed: 0%
+        <div id="percentComplete" style="margin-bottom:8px; font-weight:500;">
+          Completed: 0%
+        </div>
+
+        <div class="progress">
+          <div id="progress"></div>
+        </div>
+
+        <div id="todayList"></div>
+
+        <div class="add">
+          <input id="habitInput" placeholder="New habit" />
+          <button id="addHabitBtn">Add</button>
+        </div>
       </div>
 
-      <div class="progress">
-        <div id="progress"></div>
-      </div>
-
-      <div id="todayList"></div>
-
-      <div class="add">
-        <input id="habitInput" placeholder="New habit" />
-        <button id="addHabitBtn">Add</button>
+      <div class="card">
+        <h2>How it Works</h2>
+        <p style="margin-top:0; color:var(--muted); line-height:1.6; font-size:14px;">
+          Welcome to the beta version of the <strong>Discipline OS Habit Tracker</strong>. Note that this site is meant to work on PC only. Mobile will be full of bugs.
+        </p>
+        
+        <ul style="padding-left:20px; margin:10px 0; color:var(--text); font-size:14px; line-height:1.6;">
+          <li style="margin-bottom:6px;">
+            <strong>Add Habits:</strong> Use the input above ("New habit") to add tasks. They appear in your Weekly Overview and are automatically scheduled.
+          </li>
+          <li style="margin-bottom:6px;">
+            <strong>Plan Your Day:</strong> Use "Today's Planner" to see and complete tasks scheduled for today.
+          </li>
+          <li>
+            <strong>Settings (Top Right):</strong>
+            <ul style="margin-top:4px; padding-left:20px; color:var(--muted);">
+              <li>🌓 Toggle Light/Dark Theme</li>
+              <li>⏱️ Start a Focus Session</li>
+              <li>👥 View Community Progress</li>
+            </ul>
+          </li>
+        </ul>
       </div>
     </div>
 
