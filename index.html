@@ -666,7 +666,7 @@ const db = firebase.firestore();
         ×
       </button>
 
-      <h2>Community - Last 7 Days</h2>
+      <h2>Community - Current Week</h2>
 
       <table style="width:100%; border-collapse:collapse; margin-top:16px;">
         <thead>
@@ -1337,30 +1337,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Clear previous content
     communityBody.innerHTML = "";
-    communityHeader.innerHTML = "<th>User</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th><th>Week %</th>";
+    // NEW HEADER: STRICT MONDAY TO SUNDAY
+    communityHeader.innerHTML = "<th>User</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th><th>Week %</th>";
+
+    // 1. Calculate Current Week (Mon - Sun) based on REAL TODAY
+    const today = new Date();
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Go back to Monday
+    
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentMonday);
+      d.setDate(currentMonday.getDate() + i);
+      weekDates.push(d.toISOString().split("T")[0]);
+    }
+    
+    const todayISO = today.toISOString().split("T")[0];
 
     // Get all users from Firestore
     const snapshot = await db.collection("users").get();
     snapshot.forEach(doc => {
       const data = doc.data();
-      const userName = data.displayName || doc.id; // fallback if no displayName
+      const userName = data.displayName || doc.id; 
       const habits = data.habits || [];
       const habitsHistory = data.habitsHistory || {};
-
-      // Calculate weekly progress (last 7 days)
-      const today = new Date();
-      const last7Days = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        last7Days.push(d.toISOString().split("T")[0]);
-      }
 
       let total = 0, done = 0;
       const dayCells = []; 
 
-      // This creates the 7 colored boxes for the last 7 days
-      [...last7Days].reverse().forEach(day => {
+      // 2. Loop through strictly Mon -> Sun
+      weekDates.forEach(day => {
         let dayTotal = 0;
         let dayDone = 0;
 
@@ -1378,16 +1384,17 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
 
-        // Determine color for the day's box
-        let color = "rgba(0,0,0,0.05)"; // Empty/Gray (No habits scheduled)
+        // 3. New Color Logic: Future = White, Past = Red/Green
+        let color = "rgba(0,0,0,0.05)"; // Empty (Grayish transparent)
         if (dayTotal > 0) {
-          if (dayDone >= dayTotal) {
-            color = "#34D399"; // All habits done (Green)
-          } else if (dayDone > 0) {
-            color = "#fbbf24"; // Partially done (Yellow)
-          } else {
-            color = "rgba(239, 68, 68, 0.2)"; // Scheduled but zero done (Light Red)
-          }
+           if (dayDone >= dayTotal) {
+               color = "#34D399"; // Green (Completed)
+           } else if (day < todayISO) {
+               color = "rgba(239, 68, 68, 0.2)"; // Red (Past & Missed)
+           } else {
+               // Future or Today(incomplete) -> White/Neutral
+               color = "rgba(255, 255, 255, 0.1)"; 
+           }
         }
 
         dayCells.push(`<td style="background-color: ${color}; width: 14px; height: 14px; border-radius: 3px; border: 1px solid white;"></td>`);
@@ -1395,7 +1402,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const percent = total === 0 ? 0 : Math.round((done / total) * 100);
 
-      // This puts the user, the 7 boxes, and the % into the row
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td style="font-weight:500; padding: 8px;">${userName}</td>
