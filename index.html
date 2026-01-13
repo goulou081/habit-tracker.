@@ -1,3 +1,12 @@
+Here is the updated code.
+
+**Changes made:**
+
+1. **Removed Weekly %:** Deleted the table header and the calculation/column for the weekly percentage in the Community modal.
+2. **Darker Red:** Changed the missed day color from a faint pink (`0.2` opacity) to a stronger red (`0.8` opacity) so it stands out clearly.
+3. **Real-time Daily Progress:** The logic now ensures that for **Today**, the box remains White (neutral) but updates the Percentage text instantly as you tick things off. It only turns Green when it hits 100%.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1430,3 +1439,5 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
+
+```
