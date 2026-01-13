@@ -88,52 +88,71 @@ h1 {
 }
 
 /* --- MOBILE OPTIMIZATION START --- */
+/* Wrapper to allow scrolling without breaking layout */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto; /* Enable horizontal scroll */
+  -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+  margin-top: 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
 @media (max-width: 768px) {
   body {
-    padding: 12px; /* Less padding on mobile body */
+    padding: 12px;
   }
 
   .layout {
-    grid-template-columns: 1fr; /* Stack vertically */
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  /* Force table to fit screen width (No scrolling) */
+  /* Reset table layout to allow natural width */
   table {
-    table-layout: fixed;
+    table-layout: auto !important; 
     width: 100%;
-    font-size: 11px; /* Smaller text */
+    border-collapse: separate; /* Required for sticky to work nicely with borders */
+    border-spacing: 0;
+    min-width: 600px; /* Force table to be wider than screen so it scrolls */
   }
 
   th, td {
-    padding: 4px 2px; /* Minimal padding */
+    padding: 8px 6px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-left: none;
+    border-top: none;
   }
 
-  /* The Habit Name Column */
+  /* --- THE STICKY FIRST COLUMN MAGIC --- */
   th:first-child, td:first-child {
-    width: 30%; /* Give 30% width to name */
-    white-space: nowrap; /* Forces one line */
-    overflow: hidden;    /* Cuts off extra text */
-    text-overflow: ellipsis; /* Adds ... */
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--panel); /* Must have background to cover scrolling items */
+    width: 140px; /* Fixed width for the name column */
+    min-width: 140px;
+    max-width: 140px;
+    border-right: 2px solid var(--border); /* Stronger border to show separation */
   }
 
-  /* The Date Columns */
+  /* Allow text to wrap so "Gratefulness" shows fully */
+  .item-title-cell {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  /* Date Columns */
   th:not(:first-child), td:not(:first-child) {
-    width: 10%; /* Evenly split the rest */
+    min-width: 45px; /* Ensure squares don't get crushed */
   }
 
-  /* Smaller Squares for Mobile */
   td.scheduled {
-    width: 24px !important;
-    height: 24px !important;
-    border-radius: 4px;
-  }
-  
-  /* Hide the delete button in table on mobile if it gets too crowded, 
-     or make it very small */
-  .delete-btn {
-    width: 16px; 
-    height: 16px;
+    height: 30px;
   }
 }
 /* --- MOBILE OPTIMIZATION END --- */
@@ -146,6 +165,11 @@ h1 {
   color: var(--text);
   display: flex;
   flex-direction: column;
+}
+
+/* Special fix for the Weekly Card to handle the table wrapper */
+.card-weekly {
+    overflow: hidden; /* Contains the scroll wrapper */
 }
 
 .progress {
@@ -232,13 +256,13 @@ h3 {
 .delete-btn {
   background: var(--delete-bg);
   border: 1px solid transparent;
-  width: 18px;
-  height: 18px;
+  width: 22px; /* Slightly larger for easier mobile tapping */
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   color: var(--delete-color);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -577,7 +601,7 @@ const db = firebase.firestore();
       </div>
     </div>
 
-    <div class="card">
+    <div class="card card-weekly">
       <h2>Wake Up Time</h2>
       <div style="display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:start; margin-bottom: 20px;">
         <div id="wakeList"></div>
@@ -590,6 +614,7 @@ const db = firebase.firestore();
       <div id="habitList" style="display:none;"></div>
 
       <h2>Weekly Overview</h2>
+      <small style="color:var(--muted); display:block; margin-bottom:8px;">Scroll table right to see more days →</small>
       
       <div class="week-nav">
         <button id="prevWeek" class="nav-btn">← Back</button>
@@ -597,12 +622,15 @@ const db = firebase.firestore();
         <button id="nextWeek" class="nav-btn" disabled>Next →</button>
       </div>
 
-      <table id="weeklyTable">
-        <thead>
-          <tr id="weeklyHeader"></tr>
-        </thead>
-        <tbody id="weeklyBody"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table id="weeklyTable">
+          <thead>
+            <tr id="weeklyHeader"></tr>
+          </thead>
+          <tbody id="weeklyBody"></tbody>
+        </table>
+      </div>
+
     </div>
 
   </div>
@@ -735,11 +763,16 @@ async function deleteHabit(el) {
   if (el.classList.contains("item")) {
     title = el.querySelector(".item-title").textContent;
   } else if (el.tagName === "TR") {
-    const titleCell = el.querySelector("td span.item-title");
-    title = titleCell ? titleCell.textContent : el.querySelector("td").textContent;
+    // In Weekly table
+    const titleCell = el.querySelector(".item-title-cell span.item-title");
+    // Fallback if structure changes, but prefer the class selector
+    title = titleCell ? titleCell.textContent : el.querySelector("td").textContent.trim();
   } else {
     return;
   }
+
+  // Double check we got a title
+  if (!title) return;
 
   const ref = db.collection("users").doc(user.uid);
   const data = (await ref.get()).data() || {};
@@ -967,7 +1000,7 @@ async function updateTodayView(user) {
   updateProgress();
 }
 
-// ---------------- WEEKLY VIEW (WITH RED COLOR FIX RESTORED) ----------------
+// ---------------- WEEKLY VIEW (UPDATED FOR SCROLLING) ----------------
 async function updateWeeklyView(user) {
   if (!user) return;
   const data = (await db.collection("users").doc(user.uid).get()).data() || {};
@@ -1023,7 +1056,6 @@ async function updateWeeklyView(user) {
       if (status === true) return `<td class="scheduled done"></td>`;
 
       // 3. If NOT done (undefined OR false) AND date is in the past -> Red
-      // I have ensured this fix remains here so your habits turn red!
       const todayISO = new Date().toISOString().split("T")[0];
       if (d < todayISO) {
         return `<td class="scheduled missed"></td>`;
@@ -1033,7 +1065,8 @@ async function updateWeeklyView(user) {
       return `<td class="scheduled neutral"></td>`;
     });
     
-    tr.innerHTML = `<td>
+    // Added class "item-title-cell" for better targeting in CSS
+    tr.innerHTML = `<td class="item-title-cell">
       <div style="display:flex; align-items:center; gap:8px;">
         <span class="edit-trigger" onclick="editHabitTitle('${h.title}')">⋮</span>
         <span class="item-title">${h.title}</span> 
