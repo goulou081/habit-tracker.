@@ -963,12 +963,17 @@ async function updateWeeklyView(user) {
       const dayName = weekdayNames[dateObj.getDay()];
       if (!h.days || !h.days.includes(dayName)) return "<td></td>";
       const status = habitsHistory[d]?.[h.title];
+
+      // 1. If explicitly done -> Green
       if (status === true) return `<td class="scheduled done"></td>`;
-      if (status === false) {
-        const todayISO = new Date().toISOString().split("T")[0];
-        if (d < todayISO) return `<td class="scheduled missed"></td>`;
-        return `<td class="scheduled neutral"></td>`;
+
+      // 2. If NOT done (undefined OR false) AND date is in the past -> Red
+      const todayISO = new Date().toISOString().split("T")[0];
+      if (d < todayISO) {
+        return `<td class="scheduled missed"></td>`;
       }
+
+      // 3. Otherwise (Today or Future) -> Neutral
       return `<td class="scheduled neutral"></td>`;
     });
     
@@ -1312,3 +1317,4 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
+
