@@ -88,46 +88,30 @@ h1 {
 }
 
 /* --- MOBILE OPTIMIZATION START --- */
-/* Wrapper to allow scrolling without breaking layout */
 .table-wrapper {
   width: 100%;
-  overflow-x: auto; /* Enable horizontal scroll */
-  -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 10px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
 }
 
 .mobile-hint {
-  display: none; /* Hidden by default on PC */
+  display: none;
 }
 
 @media (max-width: 768px) {
-  body {
-    padding: 12px;
-  }
-
-  .layout {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .mobile-hint {
-    display: block; /* Show only on mobile */
-    color: var(--muted);
-    margin-bottom: 8px;
-    font-size: 12px;
-  }
-
-  /* Reset table layout to allow natural width */
+  body { padding: 12px; }
+  .layout { grid-template-columns: 1fr; gap: 12px; }
+  .mobile-hint { display: block; color: var(--muted); margin-bottom: 8px; font-size: 12px; }
   table {
     table-layout: auto !important; 
     width: 100%;
-    border-collapse: separate; /* Required for sticky to work nicely with borders */
+    border-collapse: separate;
     border-spacing: 0;
-    min-width: 600px; /* Force table to be wider than screen so it scrolls */
+    min-width: 600px;
   }
-
   th, td {
     padding: 8px 6px;
     border-right: 1px solid var(--border);
@@ -135,20 +119,16 @@ h1 {
     border-left: none;
     border-top: none;
   }
-
-  /* --- THE STICKY FIRST COLUMN MAGIC --- */
   th:first-child, td:first-child {
     position: sticky;
     left: 0;
     z-index: 10;
-    background: var(--panel); /* Must have background to cover scrolling items */
-    width: 140px; /* Fixed width for the name column */
+    background: var(--panel);
+    width: 140px;
     min-width: 140px;
     max-width: 140px;
-    border-right: 2px solid var(--border); /* Stronger border to show separation */
+    border-right: 2px solid var(--border);
   }
-
-  /* Allow text to wrap so "Gratefulness" shows fully */
   .item-title-cell {
     white-space: normal !important;
     overflow: visible !important;
@@ -156,15 +136,8 @@ h1 {
     font-size: 12px;
     line-height: 1.3;
   }
-
-  /* Date Columns */
-  th:not(:first-child), td:not(:first-child) {
-    min-width: 45px; /* Ensure squares don't get crushed */
-  }
-
-  td.scheduled {
-    height: 30px;
-  }
+  th:not(:first-child), td:not(:first-child) { min-width: 45px; }
+  td.scheduled { height: 30px; }
 }
 /* --- MOBILE OPTIMIZATION END --- */
 
@@ -178,10 +151,7 @@ h1 {
   flex-direction: column;
 }
 
-/* Special fix for the Weekly Card to handle the table wrapper */
-.card-weekly {
-    overflow: hidden; /* Contains the scroll wrapper */
-}
+.card-weekly { overflow: hidden; }
 
 .progress {
   height:8px;
@@ -197,19 +167,9 @@ h1 {
   background:var(--accent);
 }
 
-h2 {
-  font-size:15px;
-  margin:18px 0 6px;
-  font-weight:600;
-}
+h2 { font-size:15px; margin:18px 0 6px; font-weight:600; }
+h3 { font-size:14px; margin:0 0 6px; font-weight:600; }
 
-h3 {
-  font-size:14px;
-  margin:0 0 6px;
-  font-weight:600;
-}
-
-/* Updated Item Style for Today's List */
 #todayList .item {
   background:transparent;
   border:none;
@@ -222,11 +182,8 @@ h3 {
   margin-bottom:0;
 }
 
-#todayList .item:last-child {
-  border-bottom: none;
-}
+#todayList .item:last-child { border-bottom: none; }
 
-/* The Dot UI */
 .drag-handle {
   display: flex;
   flex-wrap: wrap;
@@ -267,7 +224,7 @@ h3 {
 .delete-btn {
   background: var(--delete-bg);
   border: 1px solid transparent;
-  width: 22px; /* Slightly larger for easier mobile tapping */
+  width: 22px;
   height: 22px;
   display: flex;
   align-items: center;
@@ -281,15 +238,8 @@ h3 {
   flex-shrink: 0;
 }
 
-.delete-btn:hover {
-  background: var(--delete-color);
-  color: white;
-  transform: scale(1.15);
-}
-
-.delete-btn:active {
-  transform: scale(0.95);
-}
+.delete-btn:hover { background: var(--delete-color); color: white; transform: scale(1.15); }
+.delete-btn:active { transform: scale(0.95); }
 
 .edit-trigger {
   cursor: pointer;
@@ -300,9 +250,7 @@ h3 {
   transition: color 0.2s;
 }
 
-.edit-trigger:hover {
-  color: var(--accent);
-}
+.edit-trigger:hover { color: var(--accent); }
 
 .mark-complete-btn {
   background: var(--accent);
@@ -317,24 +265,15 @@ h3 {
   flex-shrink: 0;
 }
 
-.mark-complete-btn:hover {
-  transform: scale(1.08);
-}
-
-.mark-complete-btn:active {
-  transform: scale(0.95);
-}
-
+.mark-complete-btn:hover { transform: scale(1.08); }
+.mark-complete-btn:active { transform: scale(0.95); }
 .mark-complete-btn.is-done {
   background: #34D399;
   color: white;
   border-color: #34D399;
 }
 
-.button,
-.add button,
-.menu-item-btn,
-.nav-btn {
+.button, .add button, .menu-item-btn, .nav-btn {
   border:none;
   border-radius:999px;
   background:var(--accent);
@@ -351,11 +290,7 @@ h3 {
   opacity: 0.5;
 }
 
-.button:hover,
-.add button:hover,
-.menu-item-btn:hover {
-  background:#b79441;
-}
+.button:hover, .add button:hover, .menu-item-btn:hover { background:#b79441; }
 
 .add {
   display:flex;
@@ -394,45 +329,13 @@ h3 {
   color: var(--text);
 }
 
-table {
-  width:100%;
-  border-collapse:collapse;
-  color: var(--text);
-}
-
-th, td {
-  border:1px solid var(--border);
-  padding:8px;
-  text-align:center;
-  vertical-align:middle;
-}
-
-th {
-  background:var(--panel);
-}
-
-td.scheduled {
-  border: 1px solid var(--border);
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  font-size: 16px;
-}
-
-td.scheduled.neutral {
-  background: var(--table-neutral);
-  border: 1px solid gray;
-}
-
-td.scheduled.done {
-  background: #34D399;
-  color: white;
-}
-
-td.scheduled.missed {
-  background: #F87171;
-  color: white;
-}
+table { width:100%; border-collapse:collapse; color: var(--text); }
+th, td { border:1px solid var(--border); padding:8px; text-align:center; vertical-align:middle; }
+th { background:var(--panel); }
+td.scheduled { border: 1px solid var(--border); width: 32px; height: 32px; border-radius: 6px; font-size: 16px; }
+td.scheduled.neutral { background: var(--table-neutral); border: 1px solid gray; }
+td.scheduled.done { background: #34D399; color: white; }
+td.scheduled.missed { background: #F87171; color: white; }
 
 .week-nav {
   display: flex;
@@ -469,12 +372,7 @@ td.scheduled.missed {
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
-.settings-container {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 3000;
-}
+.settings-container { position: fixed; top: 16px; right: 16px; z-index: 3000; }
 
 #settingsToggleBtn {
   background: var(--panel);
@@ -491,9 +389,7 @@ td.scheduled.missed {
   transition: transform 0.3s ease;
 }
 
-#settingsToggleBtn:hover {
-  transform: rotate(45deg);
-}
+#settingsToggleBtn:hover { transform: rotate(45deg); }
 
 .settings-menu {
   position: absolute;
@@ -510,9 +406,7 @@ td.scheduled.missed {
   box-shadow: 0 10px 15px rgba(0,0,0,0.3);
 }
 
-.settings-menu.active {
-  display: flex;
-}
+.settings-menu.active { display: flex; }
 
 .menu-item-btn {
   width: 100%;
@@ -528,17 +422,9 @@ td.scheduled.missed {
   font-weight: 500;
 }
 
-.menu-item-btn:hover {
-  background: var(--border);
-  color: var(--accent);
-}
-
-.logout-btn-item {
-  color: #F87171 !important;
-}
-.logout-btn-item:hover {
-  background: rgba(248, 113, 113, 0.1) !important;
-}
+.menu-item-btn:hover { background: var(--border); color: var(--accent); }
+.logout-btn-item { color: #F87171 !important; }
+.logout-btn-item:hover { background: rgba(248, 113, 113, 0.1) !important; }
 </style>
 
 
@@ -604,8 +490,7 @@ const db = firebase.firestore();
         <div class="progress">
           <div id="progress"></div>
         </div>
-  const { video, id, event } = req.query;
-
+        
         <div id="todayList"></div>
 
         <div class="add">
@@ -809,13 +694,6 @@ async function deleteHabit(el) {
     title = titleCell ? titleCell.textContent : el.querySelector("td").textContent.trim();
   } else {
     return;
-  // Handling the YouTube Redirect (The Original Working Logic)
-  if (video && !event) {
-    const newUserId = 'user_' + Math.floor(Math.random() * 1000000000);
-    await supabase.from('events').insert([
-      { user_id: newUserId, event_type: `youtube_click: ${video}`, created_at: new Date() }
-    ]);
-    return res.redirect(307, `https://discipline-os.com/?id=${newUserId}`);
   }
 
   // Double check we got a title
@@ -962,18 +840,11 @@ async function addHabit() {
     if (daysArray.includes(d.toLocaleDateString("en-US", { weekday: "short" }))) {
       if (updatedHistory[dateStr][val] === undefined) updatedHistory[dateStr][val] = false;
     }
-  // Handling the Click Trackers (Stripe/Skool)
-  if (id && event) {
-    await supabase.from('events').insert([
-      { user_id: id, event_type: event, created_at: new Date() }
-    ]);
-    return res.status(200).send('Logged');
   }
   await ref.set({ habitsHistory: updatedHistory }, { merge: true });
 
   updateTodayView(user);
   updateWeeklyView(user);
-  return res.status(400).send('Missing parameters');
 }
 
 async function addWake() {
@@ -1476,4 +1347,3 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
-
