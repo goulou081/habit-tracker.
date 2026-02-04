@@ -1,17 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Routine + Community</title>
 import { createClient } from '@supabase/supabase-js'
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 const supabase = createClient(
   process.env.SUPABASE_URL, 
   process.env.SUPABASE_KEY
 )
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+<style>
+:root {
+  --bg: #0B0F1A;
+  --panel: #111827;
+  --border: #1F2937;
+  --text: #E5E7EB;
+  --muted: #9CA3AF;
+  --accent: #C9A24D;
+  --radius: 14px;
+  --table-neutral: white;
+  --delete-bg: rgba(248, 113, 113, 0.1);
+  --delete-color: #F87171;
+}
+
+body.light-mode {
+  --bg: #F3F4F6;
+  --panel: #FFFFFF;
+  --border: #D1D5DB;
+  --text: #111827;
+  --muted: #6B7280;
+  --accent: #C9A24D;
+  --table-neutral: #D1D5DB;
+  --delete-bg: #fee2e2;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin:0;
+  padding:24px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition: all 0.3s ease;
+}
+
+.app {
+  max-width:1200px;
+  margin:0 auto;
+}
+
+h1 {
+  margin:0 0 6px 0;
+  font-size:28px;
+  font-weight:600;
+}
+
+.top-bar {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.pill {
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:8px 14px;
+  font-size:13px;
+  background:var(--panel);
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+.layout {
+  display:grid;
+  grid-template-columns: 1.2fr 2fr;
+  gap:20px;
+  align-items: start;
+}
+
+/* --- MOBILE OPTIMIZATION START --- */
+/* Wrapper to allow scrolling without breaking layout */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto; /* Enable horizontal scroll */
+  -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+  margin-top: 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.mobile-hint {
+  display: none; /* Hidden by default on PC */
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .mobile-hint {
+    display: block; /* Show only on mobile */
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  /* Reset table layout to allow natural width */
+  table {
+    table-layout: auto !important; 
+    width: 100%;
+    border-collapse: separate; /* Required for sticky to work nicely with borders */
+    border-spacing: 0;
+    min-width: 600px; /* Force table to be wider than screen so it scrolls */
+  }
+
+  th, td {
+    padding: 8px 6px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-left: none;
+    border-top: none;
+  }
+
+  /* --- THE STICKY FIRST COLUMN MAGIC --- */
+  th:first-child, td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--panel); /* Must have background to cover scrolling items */
+    width: 140px; /* Fixed width for the name column */
+    min-width: 140px;
+    max-width: 140px;
+    border-right: 2px solid var(--border); /* Stronger border to show separation */
+  }
+
+  /* Allow text to wrap so "Gratefulness" shows fully */
+  .item-title-cell {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  /* Date Columns */
+  th:not(:first-child), td:not(:first-child) {
+    min-width: 45px; /* Ensure squares don't get crushed */
+  }
+
+  td.scheduled {
+    height: 30px;
+  }
+}
+/* --- MOBILE OPTIMIZATION END --- */
+
+.card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Special fix for the Weekly Card to handle the table wrapper */
+.card-weekly {
+    overflow: hidden; /* Contains the scroll wrapper */
+}
+
+.progress {
+  height:8px;
+  background:var(--border);
+  border-radius:999px;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+.progress > div {
+  height:100%;
+  width:0%;
+  background:var(--accent);
+}
+
+h2 {
+  font-size:15px;
+  margin:18px 0 6px;
+  font-weight:600;
+}
+
+h3 {
+  font-size:14px;
+  margin:0 0 6px;
+  font-weight:600;
+}
+
+/* Updated Item Style for Today's List */
+#todayList .item {
+  background:transparent;
+  border:none;
+  border-bottom:1px solid var(--border);
+  border-radius:0;
+  padding:12px 0;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:0;
+}
+
+#todayList .item:last-child {
+  border-bottom: none;
+}
+
+/* The Dot UI */
+.drag-handle {
+  display: flex;
+  flex-wrap: wrap;
+  width: 12px;
+  gap: 3px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.drag-handle .dot {
+  width: 4px;
+  height: 4px;
+  background-color: var(--muted);
+  border-radius: 50%;
+}
+
+.item {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:8px;
+}
+
+.item input { margin-top:3px; }
+
+.item-title {
+  font-size:14px;
+  font-weight:500;
+  flex:1;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.delete-btn {
+  background: var(--delete-bg);
+  border: 1px solid transparent;
+  width: 22px; /* Slightly larger for easier mobile tapping */
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--delete-color);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.delete-btn:hover {
+  background: var(--delete-color);
+  color: white;
+  transform: scale(1.15);
+}
+
+.delete-btn:active {
+  transform: scale(0.95);
+}
+
+.edit-trigger {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 18px;
+  padding: 0 4px;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.edit-trigger:hover {
+  color: var(--accent);
+}
+
+.mark-complete-btn {
+  background: var(--accent);
+  color: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.mark-complete-btn:hover {
+  transform: scale(1.08);
+}
+
+.mark-complete-btn:active {
+  transform: scale(0.95);
+}
+
+.mark-complete-btn.is-done {
+  background: #34D399;
+  color: white;
+  border-color: #34D399;
+}
+
+.button,
+.add button,
+.menu-item-btn,
+.nav-btn {
+  border:none;
+  border-radius:999px;
+  background:var(--accent);
+  color:var(--panel);
+  font-size:14px;
+  padding:10px 16px;
+  cursor:pointer;
+  transition: background 0.2s, color 0.3s;
+}
+
+.nav-btn:disabled {
+  background: var(--border);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.button:hover,
+.add button:hover,
+.menu-item-btn:hover {
+  background:#b79441;
+}
+
+.add {
+  display:flex;
+  gap:6px;
+  margin-top:auto;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+
+.add input {
+  flex:1;
+  padding:8px 10px;
+  font-size:13px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+#focusTimer {
+  background:var(--accent);
+  color:var(--panel);
+  padding:6px 12px;
+  border-radius:8px;
+  display:none;
+  font-weight: bold;
+}
+
+.time-input {
+  width:120px;
+  font-size:13px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:4px 6px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  color: var(--text);
+}
+
+th, td {
+  border:1px solid var(--border);
+  padding:8px;
+  text-align:center;
+  vertical-align:middle;
+}
+
+th {
+  background:var(--panel);
+}
+
+td.scheduled {
+  border: 1px solid var(--border);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+td.scheduled.neutral {
+  background: var(--table-neutral);
+  border: 1px solid gray;
+}
+
+td.scheduled.done {
+  background: #34D399;
+  color: white;
+}
+
+td.scheduled.missed {
+  background: #F87171;
+  color: white;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+#communityModal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+
+#communityModal > div {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 800px;
+  padding: 24px;
+  position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.settings-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 3000;
+}
+
+#settingsToggleBtn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+#settingsToggleBtn:hover {
+  transform: rotate(45deg);
+}
+
+.settings-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+  box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+}
+
+.settings-menu.active {
+  display: flex;
+}
+
+.menu-item-btn {
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.menu-item-btn:hover {
+  background: var(--border);
+  color: var(--accent);
+}
+
+.logout-btn-item {
+  color: #F87171 !important;
+}
+.logout-btn-item:hover {
+  background: rgba(248, 113, 113, 0.1) !important;
+}
+</style>
+
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCSqx0gZ5MenTPovDLjvVyt6_W5K0QEosM",
+  authDomain: "discipline-os--habit-tracker.firebaseapp.com",
+  projectId: "discipline-os--habit-tracker",
+  storageBucket: "discipline-os--habit-tracker.firebasestorage.app",
+  messagingSenderId: "260702356580",
+  appId: "1:260702356580:web:e96a3e76f78cd73f1dcb71"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+</script>
+
+<div id="habit-connector" style="text-align:center; padding:30px; margin-top:40px; border-radius:12px; background:#f5f5f5; box-shadow:0 4px 12px rgba(0,0,0,0.2); width:300px; margin-left:auto; margin-right:auto;">
+<h2>Login / Sign Up</h2>
+<input id="display-name" placeholder="Display Name" style="width:90%; margin:8px 0; padding:8px;" />
+<input id="email" type="email" placeholder="Email" style="width:90%; margin:8px 0; padding:8px;" />
+<input id="password" type="password" placeholder="Password" style="width:90%; margin:8px 0; padding:8px;" />
+<div style="margin-top:12px;">
+<button id="signup-btn">Sign Up</button>
+<button id="login-btn">Login</button>
+</div>
+<p id="login-msg" style="color:red; margin-top:10px;"></p>
+</div>
+
+<div class="settings-container" id="settingsContainer" style="display:none;">
+  <button id="settingsToggleBtn">⚙️</button>
+  <div class="settings-menu" id="settingsMenu">
+    <button class="menu-item-btn" id="themeBtn">🌓 Toggle Theme</button>
+    <button class="menu-item-btn" id="focusBtn">⏱️ Start Focus Session</button>
+    <button class="menu-item-btn" id="openCommunityBtn">👥 Community View</button>
+    <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+    <button class="menu-item-btn logout-btn-item" id="logoutBtn">🚪 Log out</button>
+  </div>
+</div>
+
+<div class="app" style="display:none;">
+
+  <div class="top-bar">
+    <div class="pill">🔥 <strong id="streak">0</strong> days</div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <div id="focusTimer">00:00</div>
+    </div>
+  </div>
+
+  <h1 id="dynamicDate"></h1>
+  <p id="welcomeUser" style="margin-top: 0; color: var(--muted); font-size: 18px;"></p>
+
+  <div class="layout">
+
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card">
+        <h2>Today's Planner ↕️ In order ↕️</h2>
+
+        <div id="percentComplete" style="margin-bottom:8px; font-weight:500;">
+          Completed: 0%
+        </div>
+
+        <div class="progress">
+          <div id="progress"></div>
+        </div>
   const { video, id, event } = req.query;
 
+        <div id="todayList"></div>
+
+        <div class="add">
+          <input id="habitInput" placeholder="New habit" />
+          <button id="addHabitBtn">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How it Works</h2>
+        <p style="margin-top:0; color:var(--muted); line-height:1.6; font-size:14px;">
+          Welcome to the beta version of the <strong>Discipline OS Habit Tracker</strong>. Note that this site is meant to work on PC only. Mobile will be full of bugs.
+        </p>
+        
+        <ul style="padding-left:20px; margin:10px 0; color:var(--text); font-size:14px; line-height:1.6;">
+          <li style="margin-bottom:6px;">
+            <strong>Add Habits:</strong> Use the input above ("New habit") to add tasks. They appear in your Weekly Overview and are automatically scheduled.
+          </li>
+          <li style="margin-bottom:6px;">
+            <strong>Plan Your Day:</strong> Use "Today's Planner" to see and complete tasks scheduled for today.
+          </li>
+          <li>
+            <strong>Settings (Top Right):</strong>
+            <ul style="margin-top:4px; padding-left:20px; color:var(--muted);">
+              <li>🌓 Toggle Light/Dark Theme</li>
+              <li>⏱️ Start a Focus Session</li>
+              <li>👥 View Community Progress</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card card-weekly">
+      <div id="habitList" style="display:none;"></div>
+
+      <h2>Weekly Overview</h2>
+      <small class="mobile-hint">Scroll table right to see more days →</small>
+      
+      <div class="week-nav">
+        <button id="prevWeek" class="nav-btn">← Back</button>
+        <span id="weekDisplay" style="font-weight:600; font-size:14px;">Current Week</span>
+        <button id="nextWeek" class="nav-btn" disabled>Next →</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="weeklyTable">
+          <thead>
+            <tr id="weeklyHeader"></tr>
+          </thead>
+          <tbody id="weeklyBody"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <h2>Wake Up Time</h2>
+        <div style="display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:start;">
+          <div id="wakeList"></div>
+          <div class="add" style="border-top:none; padding-top:0; margin-top:0;">
+            <input type="time" id="wakeTime" class="time-input" />
+            <button id="addWakeBtn">Add</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="communityModal">
+    <div>
+      <button
+        id="closeCommunityModal"
+        style="
+          position:absolute;
+          top:12px;
+          right:12px;
+          border:none;
+          background:none;
+          font-size:20px;
+          cursor:pointer;
+          color:var(--text);
+        "
+      >
+        ×
+      </button>
+
+      <h2>Community - Current Week</h2>
+
+      <table style="width:100%; border-collapse:collapse; margin-top:16px;">
+        <thead>
+          <tr id="communityTableHeader"></tr>
+        </thead>
+        <tbody id="communityTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+const progressBar = document.getElementById("progress");
+const streakEl = document.getElementById("streak");
+let currentViewingDate = new Date();
+
+// ---------------- Icon Logic ----------------
+const habitIcons = {
+  workout: "🏋️", gym: "💪", exercise: "🏃", run: "👟", walk: "🚶",
+  read: "📚", book: "📖", study: "🧠", learn: "🎓",
+  water: "💧", drink: "🥛", eat: "🥗", food: "🍎",
+  dance: "💃", music: "🎵", play: "🎸",
+  sleep: "🌙", wake: "☀️", meditat: "🧘",
+  code: "💻", work: "💼", write: "✍️",
+  clean: "🧹", shower: "🚿", pray: "🙏",
+  journal: "📓", sun: "☀️", night: "🌑", yoga: "🧘‍♀️"
+};
+
+function getHabitIcon(title) {
+  const cleanTitle = title.replace(/^\p{Emoji}\s*/u, '').toLowerCase();
+  for (const [key, emoji] of Object.entries(habitIcons)) {
+    if (cleanTitle.includes(key)) return emoji;
+  }
+  return "✨";
+}
+
+// Helper to parse days from string
+function parseDaysInput(input) {
+  const allDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  if (input.trim().toLowerCase() === "all" || input.trim() === "") {
+    return allDays;
+  }
+  const rawDays = input.split(/[\s,]+/).map(d => d.trim()).filter(d => d.length > 0);
+  let daysArray = rawDays.map(d => {
+    const trimmed = d.toLowerCase();
+    const match = allDays.find(ad =>
+      ad.toLowerCase() === trimmed || ad.toLowerCase().startsWith(trimmed.slice(0, 3))
+    );
+    return match || null;
+  }).filter(d => d !== null);
+  return [...new Set(daysArray)];
+}
+
+// ---------------- Habit Progress ----------------
+function updateProgress() {
+  const btns = document.querySelectorAll("#todayList .mark-complete-btn");
+  const total = btns.length || 1;
+  const done = [...btns].filter(b => b.classList.contains("is-done")).length;
+
+  progressBar.style.width = `${(done / total) * 100}%`;
+
+  const percentText = document.getElementById("percentComplete");
+  if (percentText) {
+    percentText.textContent = `Completed: ${Math.round((done / total) * 100)}%`;
+  }
+}
+
+// ---------------- Streak ----------------
+async function updateStreakIfComplete(user) {
+  if (!user) return;
+  const userRef = db.collection("users").doc(user.uid);
+  const data = (await userRef.get()).data() || {};
+  const habits = data.habits || [];
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const habitsHistory = data.habitsHistory || {};
+  const todayWeekday = new Date(todayStr).toLocaleDateString("en-US", { weekday: "short" });
+
+  const todayHabitsDone = habits
+    .filter(h => h.days.includes(todayWeekday))
+    .every(h => habitsHistory[todayStr]?.[h.title] === true);
+
+  if (!todayHabitsDone) return;
+
+  let streak = data.streak || 0;
+  const lastDay = data.lastCompletedDay || null;
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toISOString().split("T")[0];
+
+  if (lastDay === yStr) streak++;
+  else if (lastDay === todayStr) streak = streak;
+  else streak = 1;
+
+  streakEl.textContent = streak;
+  await userRef.set({ streak, lastCompletedDay: todayStr }, { merge: true });
+}
+
+// ---------------- DELETE FUNCTIONS ----------------
+async function deleteHabit(el) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  let title;
+  if (el.classList.contains("item")) {
+    title = el.querySelector(".item-title").textContent;
+  } else if (el.tagName === "TR") {
+    // In Weekly table
+    const titleCell = el.querySelector(".item-title-cell span.item-title");
+    // Fallback if structure changes, but prefer the class selector
+    title = titleCell ? titleCell.textContent : el.querySelector("td").textContent.trim();
+  } else {
+    return;
   // Handling the YouTube Redirect (The Original Working Logic)
   if (video && !event) {
     const newUserId = 'user_' + Math.floor(Math.random() * 1000000000);
@@ -21,6 +827,150 @@ export default async function handler(req, res) {
     return res.redirect(307, `https://discipline-os.com/?id=${newUserId}`);
   }
 
+  // Double check we got a title
+  if (!title) return;
+
+  const ref = db.collection("users").doc(user.uid);
+  const data = (await ref.get()).data() || {};
+  const habits = data.habits || [];
+  const hObj = habits.find(h => h.title === title);
+
+  if (hObj) await ref.update({ habits: firebase.firestore.FieldValue.arrayRemove(hObj) });
+
+  el.remove();
+
+  const updatedHistory = { ...(data.habitsHistory || {}) };
+  for (const date in updatedHistory) {
+    if (updatedHistory[date][title] !== undefined) {
+      delete updatedHistory[date][title];
+    }
+  }
+  await ref.set({ habitsHistory: updatedHistory }, { merge: true });
+
+  updateProgress();
+  updateTodayView(user);
+  updateWeeklyView(user);
+  updateStreakIfComplete(user);
+}
+
+// ---------------- EDIT FUNCTION (FOR WEEKLY VIEW) ----------------
+async function editHabitTitle(oldTitle) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const ref = db.collection("users").doc(user.uid);
+  const data = (await ref.get()).data() || {};
+  const habits = data.habits || [];
+  const habitsHistory = data.habitsHistory || {};
+  
+  const existingHabit = habits.find(h => h.title === oldTitle);
+  if (!existingHabit) return;
+
+  const newFullTitle = prompt("Edit habit (emoji and text):", oldTitle);
+  if (newFullTitle === null) return;
+  
+  const newDaysInput = prompt("Edit days (e.g., Mon,Wed,Fri or 'all'):", existingHabit.days.join(","));
+  if (newDaysInput === null) return;
+
+  let finalTitle = newFullTitle.trim() === "" ? oldTitle : newFullTitle.trim();
+  const emojiRegex = /\p{Emoji}/u;
+  if (!emojiRegex.test(finalTitle)) {
+    const icon = getHabitIcon(finalTitle);
+    finalTitle = `${icon} ${finalTitle}`;
+  }
+
+  const newDaysArray = parseDaysInput(newDaysInput);
+
+  const newHabits = habits.map(h => {
+    if (h.title === oldTitle) {
+      return { ...h, title: finalTitle, days: newDaysArray };
+    }
+    return h;
+  });
+
+  const newHistory = {};
+  for (const date in habitsHistory) {
+    newHistory[date] = {};
+    for (const task in habitsHistory[date]) {
+      if (task === oldTitle) {
+        newHistory[date][finalTitle] = habitsHistory[date][task];
+      } else {
+        newHistory[date][task] = habitsHistory[date][task];
+      }
+    }
+  }
+
+  // logic: Apply day changes to THIS week only (Mon-Sun)
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().split("T")[0];
+    const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+    
+    if (!newHistory[dateStr]) newHistory[dateStr] = {};
+    
+    if (newDaysArray.includes(dayName)) {
+      if (newHistory[dateStr][finalTitle] === undefined) {
+        newHistory[dateStr][finalTitle] = false;
+      }
+    } else {
+      delete newHistory[dateStr][finalTitle];
+    }
+  }
+
+  await ref.update({ habits: newHabits, habitsHistory: newHistory });
+  
+  updateTodayView(user);
+  updateWeeklyView(user);
+}
+
+function deleteWake(el) { el.remove(); }
+
+// ---------------- ADD FUNCTIONS ----------------
+async function addHabit() {
+  let val = document.getElementById("habitInput").value.trim();
+  if (!val) return;
+
+  const user = auth.currentUser;
+  if (!user) return alert("Login first.");
+
+  const icon = getHabitIcon(val);
+  if (!val.startsWith(icon)) {
+      val = `${icon} ${val}`;
+  }
+
+  let chosenDays = prompt(
+    "Enter days for this habit (e.g., Mon,Wed,Fri or Monday Tuesday) or 'all' for every day",
+    "all"
+  );
+  
+  if (chosenDays === null) return; 
+
+  document.getElementById("habitInput").value = "";
+
+  const daysArray = parseDaysInput(chosenDays);
+
+  const ref = db.collection("users").doc(user.uid);
+  const habitObj = { title: val, done: false, days: daysArray };
+  await ref.set({ habits: firebase.firestore.FieldValue.arrayUnion(habitObj) }, { merge: true });
+
+  const dataCurr = (await ref.get()).data() || {};
+  const updatedHistory = { ...dataCurr.habitsHistory };
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); 
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().split("T")[0];
+    if (!updatedHistory[dateStr]) updatedHistory[dateStr] = {};
+    if (daysArray.includes(d.toLocaleDateString("en-US", { weekday: "short" }))) {
+      if (updatedHistory[dateStr][val] === undefined) updatedHistory[dateStr][val] = false;
+    }
   // Handling the Click Trackers (Stripe/Skool)
   if (id && event) {
     await supabase.from('events').insert([
@@ -28,6 +978,510 @@ export default async function handler(req, res) {
     ]);
     return res.status(200).send('Logged');
   }
+  await ref.set({ habitsHistory: updatedHistory }, { merge: true });
 
+  updateTodayView(user);
+  updateWeeklyView(user);
   return res.status(400).send('Missing parameters');
 }
+
+async function addWake() {
+  const timeVal = document.getElementById("wakeTime").value;
+  if (!timeVal) return;
+  const user = auth.currentUser; if (!user) return alert("Login first.");
+  const ref = db.collection("users").doc(user.uid);
+  const prevData = (await ref.get()).data() || {};
+  if (prevData.wake && prevData.wake.length > 0) {
+    await ref.update({ wake: firebase.firestore.FieldValue.delete() });
+    document.getElementById("wakeList").innerHTML = "";
+  }
+  await ref.set({ wake: [{ time: timeVal, done: false }] }, { merge: true });
+  document.getElementById("wakeList").insertAdjacentHTML(
+    "beforeend",
+    `<div class="item"><input type="checkbox" class="wake-check"><div class="item-title">${timeVal}</div><button class="delete-btn" onclick="deleteWake(this.parentElement)">✕</button></div>`
+  );
+}
+
+// ---------------- TODAY VIEW (INTEGRATED DOTS & LINES) ----------------
+async function updateTodayView(user) {
+  if (!user) return;
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayWeekday = new Date(todayStr).toLocaleDateString("en-US", { weekday: "short" });
+
+  const data = (await db.collection("users").doc(user.uid).get()).data() || {};
+  const habits = data.habits || [];
+  const habitsHistory = data.habitsHistory || {};
+  if (!habitsHistory[todayStr]) habitsHistory[todayStr] = {};
+
+  const todayList = document.getElementById("todayList");
+  todayList.innerHTML = "";
+
+  habits.filter(h => h.days.includes(todayWeekday)).forEach(h => {
+    const done = habitsHistory[todayStr][h.title] || false;
+    const div = document.createElement("div");
+    div.className = "item";
+    
+    // Adding the Dots (drag-handle) and task layout
+    div.innerHTML = `
+      <div class="drag-handle">
+        <div class="dot"></div><div class="dot"></div>
+        <div class="dot"></div><div class="dot"></div>
+      </div>
+      <button class="mark-complete-btn ${done ? "is-done" : ""}">${done ? "Complete" : "Mark Complete"}</button>
+      <div class="item-title">${h.title}</div>
+      <button class="delete-btn" onclick="deleteHabit(this.parentElement)">✕</button>
+    `;
+    todayList.appendChild(div);
+
+    div.querySelector(".mark-complete-btn").addEventListener("click", async (e) => {
+      const btn = e.target;
+      const isNowDone = !btn.classList.contains("is-done");
+      
+      const ref = db.collection("users").doc(user.uid);
+      const dataCurr = (await ref.get()).data() || {};
+      const updatedHistory = { ...dataCurr.habitsHistory };
+      if (!updatedHistory[todayStr]) updatedHistory[todayStr] = {};
+      updatedHistory[todayStr][h.title] = isNowDone;
+      
+      await ref.set({ habitsHistory: updatedHistory }, { merge: true });
+      
+      if (isNowDone) {
+          btn.classList.add("is-done");
+          btn.textContent = "Complete";
+      } else {
+          btn.classList.remove("is-done");
+          btn.textContent = "Mark Complete";
+      }
+
+      updateProgress();
+      updateWeeklyView(user);
+      updateStreakIfComplete(user);
+    });
+  });
+
+  enableTodayDragAndDrop();
+  updateProgress();
+}
+
+// ---------------- WEEKLY VIEW (UPDATED FOR SCROLLING) ----------------
+async function updateWeeklyView(user) {
+  if (!user) return;
+  const data = (await db.collection("users").doc(user.uid).get()).data() || {};
+  const habits = data.habits || [];
+  const habitsHistory = data.habitsHistory || {};
+  const weeklyHeader = document.getElementById("weeklyHeader");
+  const weeklyBody = document.getElementById("weeklyBody");
+  const weekDisplay = document.getElementById("weekDisplay");
+
+  const baseDate = new Date(currentViewingDate);
+  const monday = new Date(baseDate);
+  monday.setDate(baseDate.getDate() - ((baseDate.getDay() + 6) % 7));
+  
+  const dates = [];
+  weeklyHeader.innerHTML = "<th>Habit</th>";
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const displayStr = String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0');
+    weeklyHeader.innerHTML += `<th>${displayStr}</th>`;
+    dates.push(d.toISOString().split("T")[0]);
+  }
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  weekDisplay.textContent = `${monday.toLocaleDateString()} - ${sunday.toLocaleDateString()}`;
+
+  const realToday = new Date();
+  const realMonday = new Date(realToday);
+  realMonday.setDate(realToday.getDate() - ((realToday.getDay() + 6) % 7));
+  realMonday.setHours(0,0,0,0);
+  
+  const viewingMonday = new Date(monday);
+  viewingMonday.setHours(0,0,0,0);
+
+  document.getElementById("nextWeek").disabled = viewingMonday >= realMonday;
+
+  weeklyBody.innerHTML = "";
+  const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  habits.forEach(h => {
+    const tr = document.createElement("tr");
+    const cells = dates.map(d => {
+      const dateObj = new Date(d);
+      const dayName = weekdayNames[dateObj.getDay()];
+      
+      // 1. If habit not scheduled for this day, return empty
+      if (!h.days || !h.days.includes(dayName)) return "<td></td>";
+      
+      const status = habitsHistory[d]?.[h.title];
+
+      // 2. If explicitly done -> Green
+      if (status === true) return `<td class="scheduled done"></td>`;
+
+      // 3. If NOT done (undefined OR false) AND date is in the past -> Red
+      const todayISO = new Date().toISOString().split("T")[0];
+      if (d < todayISO) {
+        return `<td class="scheduled missed"></td>`;
+      }
+
+      // 4. Otherwise (Today or Future) -> Neutral
+      return `<td class="scheduled neutral"></td>`;
+    });
+    
+    // Added class "item-title-cell" for better targeting in CSS
+    tr.innerHTML = `<td class="item-title-cell">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="edit-trigger" onclick="editHabitTitle('${h.title}')">⋮</span>
+        <span class="item-title">${h.title}</span> 
+        <button class="delete-btn" onclick="deleteHabit(this.closest('tr'))">✕</button>
+      </div>
+    </td>` + cells.join("");
+    weeklyBody.appendChild(tr);
+  });
+}
+
+// ---------------- DRAG AND DROP ----------------
+function enableTodayDragAndDrop() {
+  const todayList = document.getElementById("todayList");
+  let dragSrcEl = null;
+
+  function handleDragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', null);
+    this.style.opacity = '0.4';
+  }
+
+  function handleDragOver(e) {
+    if (e.preventDefault) e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+  }
+
+  function handleDrop(e) {
+    if (e.stopPropagation) e.stopPropagation();
+    if (dragSrcEl !== this) {
+      const nodes = Array.from(todayList.children);
+      const srcIndex = nodes.indexOf(dragSrcEl);
+      const targetIndex = nodes.indexOf(this);
+      if (srcIndex < targetIndex) {
+        todayList.insertBefore(dragSrcEl, this.nextSibling);
+      } else {
+        todayList.insertBefore(dragSrcEl, this);
+      }
+    }
+    return false;
+  }
+
+  function handleDragEnd(e) {
+    this.style.opacity = '1';
+  }
+
+  const items = todayList.querySelectorAll(".item");
+  items.forEach(item => {
+    item.setAttribute("draggable", "true");
+    item.addEventListener("dragstart", handleDragStart);
+    item.addEventListener("dragover", handleDragOver);
+    item.addEventListener("drop", handleDrop);
+    item.addEventListener("dragend", handleDragEnd);
+  });
+}
+</script>
+
+
+<script>
+const focusBtn = document.getElementById("focusBtn");
+const focusTimerEl = document.getElementById("focusTimer");
+let focusInterval;
+
+focusBtn.addEventListener("click", ()=>{
+  const input = prompt("Set focus session (hours:minutes, e.g., 1:30)","0:20");
+  if(!input) return;
+  const parts = input.split(":");
+  let remaining = (parseInt(parts[0])||0)*3600 + (parseInt(parts[1])||0)*60;
+  if(remaining<=0) return alert("Invalid time");
+  
+  document.getElementById("settingsMenu").classList.remove("active");
+  
+  focusTimerEl.style.display="block"; 
+  updateTimerDisplay(remaining);
+  clearInterval(focusInterval);
+  focusInterval = setInterval(()=>{
+    remaining--;
+    if(remaining<=0){ 
+        clearInterval(focusInterval); 
+        focusTimerEl.textContent="00:00"; 
+        alert("Focus session complete!"); 
+        return;
+    }
+    updateTimerDisplay(remaining);
+  },1000);
+});
+
+function updateTimerDisplay(seconds){
+  const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60), s=seconds%60;
+  let display=""; if(h>0) display+=h+"h "; if(m>0||h>0) display+=m+"m "; display+=s+"s";
+  focusTimerEl.textContent=display.trim();
+}
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const emailInput = document.getElementById("email"),
+        passwordInput = document.getElementById("password"),
+        displayNameInput = document.getElementById("display-name"),
+        signupBtn = document.getElementById("signup-btn"),
+        loginBtn = document.getElementById("login-btn"),
+        loginMsg = document.getElementById("login-msg"),
+        connector = document.getElementById("habit-connector"),
+        logoutBtn = document.getElementById("logoutBtn"),
+        app = document.querySelector(".app"),
+        openCommunityBtn = document.getElementById("openCommunityBtn"),
+        communityModal = document.getElementById("communityModal"),
+        closeCommunityModal = document.getElementById("closeCommunityModal"),
+        themeBtn = document.getElementById("themeBtn"),
+        settingsToggleBtn = document.getElementById("settingsToggleBtn"),
+        settingsMenu = document.getElementById("settingsMenu"),
+        settingsContainer = document.getElementById("settingsContainer"),
+        dynamicDateEl = document.getElementById("dynamicDate"),
+        welcomeUserEl = document.getElementById("welcomeUser");
+
+  const today = new Date();
+  const options = { weekday: 'long', day: 'numeric', month: 'long' };
+  dynamicDateEl.textContent = today.toLocaleDateString('en-US', options);
+
+  settingsToggleBtn.onclick = (e) => {
+    e.stopPropagation();
+    settingsMenu.classList.toggle("active");
+  };
+
+  document.onclick = (e) => {
+    if (!settingsContainer.contains(e.target)) {
+        settingsMenu.classList.remove("active");
+    }
+  };
+
+  document.getElementById("prevWeek").onclick = () => {
+    currentViewingDate.setDate(currentViewingDate.getDate() - 7);
+    updateWeeklyView(auth.currentUser);
+  };
+
+  document.getElementById("nextWeek").onclick = () => {
+    currentViewingDate.setDate(currentViewingDate.getDate() + 7);
+    updateWeeklyView(auth.currentUser);
+  };
+
+  if (!localStorage.getItem("theme")) localStorage.setItem("theme", "dark");
+  applyTheme(localStorage.getItem("theme"));
+
+  themeBtn.addEventListener("click", () => {
+    const current = document.body.classList.contains("light-mode") ? "light" : "dark";
+    const next = current === "dark" ? "light" : "dark";
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+    settingsMenu.classList.remove("active");
+  });
+
+  function applyTheme(theme) {
+    if (theme === "light") {
+      document.body.classList.add("light-mode");
+      document.body.classList.remove("dark-mode");
+    } else {
+      document.body.classList.add("dark-mode");
+      document.body.classList.remove("light-mode");
+    }
+  }
+
+  document.getElementById("addHabitBtn").onclick = addHabit;
+  document.getElementById("addWakeBtn").onclick = addWake;
+
+  // --- UNIFIED SHOWAPP & GATEKEEPER ---
+  async function showApp(user) {
+    try {
+      // 1. Fetch data once
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const userData = userDoc.data();
+
+      // 2. THE LOCK: Check approval immediately
+      if (!userData || userData.approved !== true) {
+        alert("Account pending admin approval.");
+        await auth.signOut();
+        connector.style.display = "block";
+        app.style.display = "none";
+        if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
+        return; // Stop here if not approved
+      }
+
+      // 3. THE ACCESS: Only happens if approved is true
+      connector.style.display = "none";
+      if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "block";
+      app.style.display = "block";
+
+      const userName = user.displayName || user.email;
+      welcomeUserEl.textContent = `Welcome back, ${userName}`;
+      streakEl.textContent = userData.streak || 0;
+
+      updateTodayView(user);
+      updateWeeklyView(user);
+      updateStreakIfComplete(user);
+      
+    } catch (err) {
+      console.error("ShowApp Error:", err);
+      await auth.signOut();
+    }
+  }
+
+  // THE CLEAN GATEKEEPER
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      showApp(user); 
+    } else {
+      connector.style.display = "block";
+      app.style.display = "none";
+      if (typeof settingsContainer !== 'undefined') settingsContainer.style.display = "none";
+    }
+  });
+
+  // --- THE UPDATED SIGNUP BUTTON ---
+  signupBtn.onclick = async (e) => {
+    e.preventDefault(); 
+    const nameVal = displayNameInput.value; 
+    const emailVal = emailInput.value;
+    const passVal = passwordInput.value;
+    
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(emailVal, passVal);
+      await cred.user.updateProfile({ displayName: nameVal });
+      
+      // CREATE THE DOC WITH THE LOCK
+      await db.collection("users").doc(cred.user.uid).set({ 
+        displayName: nameVal, 
+        approved: false, // <--- THIS IS THE LOCK
+        streak: 0, 
+        habits: [], 
+        habitsHistory: {}, 
+        wake: [] 
+      });
+
+      setTimeout(async () => {
+        alert("Signup successful! Please wait for admin approval.");
+        await auth.signOut();
+        window.location.reload(); 
+      }, 1000);
+
+    } catch (err) { 
+      loginMsg.textContent = err.message; 
+    }
+  };
+
+  loginBtn.onclick = async () => {
+    try { await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value); }
+    catch (e) { loginMsg.textContent = e.message; }
+  };
+
+  logoutBtn.onclick = () => auth.signOut();
+  
+  async function updateCommunityView() {
+    const communityBody = document.getElementById("communityTableBody");
+    const communityHeader = document.getElementById("communityTableHeader");
+
+    // Clear previous content
+    communityBody.innerHTML = "";
+    // NEW HEADER: STRICT MONDAY TO SUNDAY (Removed Week %)
+    communityHeader.innerHTML = "<th>User</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>";
+
+    // 1. Calculate Current Week (Mon - Sun) based on REAL TODAY
+    const today = new Date();
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Go back to Monday
+    
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentMonday);
+      d.setDate(currentMonday.getDate() + i);
+      weekDates.push(d.toISOString().split("T")[0]);
+    }
+    
+    const todayISO = today.toISOString().split("T")[0];
+
+    // Get all users from Firestore
+    const snapshot = await db.collection("users").get();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const userName = data.displayName || doc.id; 
+      const habits = data.habits || [];
+      const habitsHistory = data.habitsHistory || {};
+
+      let total = 0, done = 0;
+      const dayCells = []; 
+
+      // 2. Loop through strictly Mon -> Sun
+      weekDates.forEach(day => {
+        let dayTotal = 0;
+        let dayDone = 0;
+
+        habits.forEach(h => {
+          if (h && h.title && h.days && Array.isArray(h.days)) {
+            const dayName = new Date(day).toLocaleDateString("en-US", { weekday: "short" });
+            if (h.days.includes(dayName)) {
+              dayTotal++;
+              total++;
+              if (habitsHistory[day] && habitsHistory[day][h.title] === true) {
+                dayDone++;
+                done++;
+              }
+            }
+          }
+        });
+
+        // 3. Color Logic & Text Color Logic
+        let color = "var(--border)"; // Default neutral bg visible on both
+        let textColor = "var(--text)"; // Default text color visible on both
+
+        if (dayTotal > 0) {
+           if (dayDone >= dayTotal) {
+               color = "#34D399"; // Green (Complete)
+               textColor = "#fff"; // White text on green
+           } else if (day < todayISO) {
+               color = "rgba(239, 68, 68, 0.75)"; // Darker Red (Missed & Past)
+               textColor = "#fff"; // White text on red
+           } else {
+               // Today (In Progress) or Future -> Neutral
+               color = "var(--border)"; 
+               textColor = "var(--text)"; // Smart text color (Black in Light, White in Dark)
+           }
+        }
+
+        // 4. Calculate % text for this day
+        let dayPercentText = "";
+        if (dayTotal > 0) {
+          const p = Math.round((dayDone / dayTotal) * 100);
+          dayPercentText = `${p}%`;
+        }
+
+        dayCells.push(`<td style="background-color: ${color}; color: ${textColor}; font-size: 10px; font-weight: 500; text-align: center; vertical-align: middle; padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); min-width: 36px;">${dayPercentText}</td>`);
+      });
+
+      // No percent column at the end
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:500; padding: 8px;">${userName}</td>
+        ${dayCells.join("")}
+      `;
+      communityBody.appendChild(tr);
+    });
+  }
+
+  openCommunityBtn.onclick = async () => {
+    communityModal.style.display = "flex";
+    await updateCommunityView();
+  };
+
+  closeCommunityModal.onclick = () => {
+    communityModal.style.display = "none";
+  };
+}); 
+
+</script>
+</body>
+</html>
